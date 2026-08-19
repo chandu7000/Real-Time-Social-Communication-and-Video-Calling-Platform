@@ -16,16 +16,18 @@
   "description": "Backend API for the Real-Time Social Communication and Video Calling Platform",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
+    "multer": "^2.2.0",
     "stream-chat": "^8.60.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "eslint": "^9.25.0"
+    "eslint": "^9.25.0",
+    "nodemon": "^3.1.9"
   }
 }

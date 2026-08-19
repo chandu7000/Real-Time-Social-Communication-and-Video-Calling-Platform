@@ -83,14 +83,58 @@ test("profile update payload preserves only every approved editable field", () =
   const payload = buildProfileUpdatePayload({
     fullName: " User ",
     bio: " Bio ",
-    profilePic: " https://example.com/a.png ",
+    profilePic: " https://example.com/current.png ",
+    uploadedProfilePic: " https://example.com/photo.png ",
+    avatarProfilePic: " https://example.com/avatar.png ",
+    profileImageMode: "avatar",
     nativeLanguage: " English ",
     learningLanguage: " Spanish ",
     location: " India ",
     role: "admin",
   });
-  assert.deepEqual(Object.keys(payload).sort(), [...PROFILE_EDITABLE_FIELDS].sort());
+
+  assert.deepEqual(
+    Object.keys(payload).sort(),
+    [...PROFILE_EDITABLE_FIELDS].sort()
+  );
+
+  assert.equal(payload.fullName, "User");
+  assert.equal(payload.uploadedProfilePic, "https://example.com/photo.png");
+  assert.equal(payload.avatarProfilePic, "https://example.com/avatar.png");
+  assert.equal(payload.profileImageMode, "avatar");
   assert.equal("role" in payload, false);
+});
+
+test("profile validation supports saved photo, avatar, and display mode", () => {
+  assert.equal(
+    validateProfileUpdate({
+      uploadedProfilePic: "https://example.com/photo.png",
+      avatarProfilePic: "https://example.com/avatar.svg",
+      profileImageMode: "avatar",
+    }),
+    null
+  );
+
+  assert.equal(
+    validateProfileUpdate({
+      uploadedProfilePic: "javascript:alert(1)",
+    }),
+    "Profile image must be a valid URL"
+  );
+
+  assert.equal(
+    validateProfileUpdate({
+      avatarProfilePic: "ftp://example.com/avatar.png",
+    }),
+    "Profile image must be a valid URL"
+  );
+
+  assert.equal(
+    validateProfileUpdate({
+      profileImageMode: "something-else",
+    }),
+    "Profile image mode must be photo or avatar"
+  );
 });
 
 test("profile pagination rejects fractional and non-numeric values", () => {

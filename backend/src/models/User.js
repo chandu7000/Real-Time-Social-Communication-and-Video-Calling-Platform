@@ -7,6 +7,13 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true, minlength: 6, maxlength: 128, select: false },
   bio: { type: String, default: "", trim: true, maxlength: 300 },
   profilePic: { type: String, default: "", trim: true, maxlength: 500 },
+  uploadedProfilePic: { type: String, default: "", trim: true, maxlength: 500 },
+  avatarProfilePic: { type: String, default: "", trim: true, maxlength: 500 },
+  profileImageMode: {
+    type: String,
+    enum: ["photo", "avatar"],
+    default: "avatar",
+  },
   nativeLanguage: { type: String, default: "", trim: true, maxlength: 60 },
   learningLanguage: { type: String, default: "", trim: true, maxlength: 60 },
   location: { type: String, default: "", trim: true, maxlength: 120 },

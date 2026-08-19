@@ -86,16 +86,56 @@ export async function getMyProfile(req, res) {
 export async function updateMyProfile(req, res) {
   const payload = buildProfileUpdatePayload(req.body);
   const validationError = validateProfileUpdate(payload);
-  if (validationError) return failure(res, 400, validationError);
+
+  if (validationError) {
+    return failure(res, 400, validationError);
+  }
+
+  const currentUser = await User.findById(req.user.id).select(
+    "uploadedProfilePic avatarProfilePic profileImageMode profilePic"
+  );
+
+  if (!currentUser) {
+    return failure(res, 404, "User not found");
+  }
+
+  const nextUploadedPhoto =
+    payload.uploadedProfilePic !== undefined
+      ? payload.uploadedProfilePic
+      : currentUser.uploadedProfilePic;
+
+  const nextAvatar =
+    payload.avatarProfilePic !== undefined
+      ? payload.avatarProfilePic
+      : currentUser.avatarProfilePic;
+
+  const nextMode =
+    payload.profileImageMode !== undefined
+      ? payload.profileImageMode
+      : currentUser.profileImageMode;
+
+  if (nextMode === "photo" && nextUploadedPhoto) {
+    payload.profilePic = nextUploadedPhoto;
+  } else if (nextMode === "avatar" && nextAvatar) {
+    payload.profilePic = nextAvatar;
+  }
 
   const updatedUser = await User.findByIdAndUpdate(req.user.id, payload, {
     new: true,
     runValidators: true,
   }).select(PROFILE_PUBLIC_FIELDS);
 
-  if (!updatedUser) return failure(res, 404, "User not found");
+  if (!updatedUser) {
+    return failure(res, 404, "User not found");
+  }
 
-  if (payload.fullName !== undefined || payload.profilePic !== undefined) {
+  if (
+    payload.fullName !== undefined ||
+    payload.profilePic !== undefined ||
+    payload.uploadedProfilePic !== undefined ||
+    payload.avatarProfilePic !== undefined ||
+    payload.profileImageMode !== undefined
+  ) {
     try {
       await upsertStreamUser({
         id: updatedUser._id.toString(),
@@ -107,7 +147,10 @@ export async function updateMyProfile(req, res) {
     }
   }
 
-  return success(res, 200, { message: "Profile updated successfully", user: updatedUser });
+  return success(res, 200, {
+    message: "Profile updated successfully",
+    user: updatedUser,
+  });
 }
 
 export async function getPublicProfile(req, res) {
@@ -127,11 +170,11 @@ export async function getPublicProfile(req, res) {
   const relationshipStatus = idsEqual(id, req.user.id)
     ? RELATIONSHIP_STATUS.NONE
     : getRelationshipStatus({
-        currentUserId: req.user.id,
-        targetUserId: id,
-        friends: currentUser.friends,
-        pendingRequest,
-      });
+      currentUserId: req.user.id,
+      targetUserId: id,
+      friends: currentUser.friends,
+      pendingRequest,
+    });
 
   return success(res, 200, { user, relationshipStatus, pendingRequestId: pendingRequest?._id || null });
 }
