@@ -3,14 +3,16 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; width: 100%; max-width: 100%; overflow-x: hidden; }
+  body, #root { width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; }
   body { @apply min-w-0 bg-base-200/45 text-base-content antialiased; }
+  img, video, canvas, svg { max-width: 100%; }
   button, a, input, textarea, select { outline-offset: 2px; }
   button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 @layer components {
-  .page-shell { @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
+  .page-shell { @apply mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
   .page-heading { @apply text-2xl font-bold tracking-tight sm:text-3xl; }
   .page-subtitle { @apply mt-1 max-w-2xl text-sm opacity-70 sm:text-base; }
   .surface-card { @apply rounded-2xl border border-base-300 bg-base-100 shadow-sm; }

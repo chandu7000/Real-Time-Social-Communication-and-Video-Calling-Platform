@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftIcon, CheckCircleIcon, MapPinIcon, MessageCircleIcon, UserPlusIcon } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowLeftIcon, CheckCircleIcon, MapPinIcon, MessageCircleIcon, UserMinusIcon, UserPlusIcon } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { getPublicProfile, sendFriendRequest } from "../lib/api";
+import { getPublicProfile, removeFriend, sendFriendRequest } from "../lib/api";
 import { relationshipAction } from "../lib/friends";
 import { getApiErrorMessage } from "../lib/profile";
 import ProfileAvatar from "../components/ProfileAvatar";
 
 const PublicProfilePage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+
   const profileQuery = useQuery({
     queryKey: ["publicProfile", id],
     queryFn: () => getPublicProfile(id),
@@ -17,16 +21,32 @@ const PublicProfilePage = () => {
     retry: false,
   });
 
+  const refreshRelationships = () => {
+    queryClient.invalidateQueries({ queryKey: ["friends"] });
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+    queryClient.invalidateQueries({ queryKey: ["userSearch"] });
+    queryClient.invalidateQueries({ queryKey: ["publicProfile", id] });
+  };
+
   const sendMutation = useMutation({
     mutationFn: () => sendFriendRequest(id),
     onSuccess: () => {
       toast.success("Friend request sent");
-      queryClient.invalidateQueries({ queryKey: ["publicProfile", id] });
+      refreshRelationships();
       queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Unable to send friend request")),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: () => removeFriend(id),
+    onSuccess: async () => {
+      toast.success("Friend removed");
+      setShowRemoveConfirm(false);
+      await refreshRelationships();
+      navigate("/friends", { replace: true });
+    },
+    onError: (error) => toast.error(getApiErrorMessage(error, "Unable to remove friend")),
   });
 
   const user = profileQuery.data?.user;
@@ -38,8 +58,8 @@ const PublicProfilePage = () => {
 
   if (profileQuery.isError || !user) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <Link to="/" className="btn btn-ghost btn-sm mb-4"><ArrowLeftIcon className="size-4" />Back</Link>
+      <div className="page-shell max-w-3xl">
+        <Link to="/friends" className="btn btn-ghost btn-sm mb-4"><ArrowLeftIcon className="size-4" />Back</Link>
         <div className="alert alert-error"><span>{getApiErrorMessage(profileQuery.error, "Profile not found")}</span></div>
       </div>
     );
@@ -47,36 +67,41 @@ const PublicProfilePage = () => {
 
   return (
     <div className="page-shell">
-      <div className="max-w-3xl mx-auto">
-        <Link to="/" className="btn btn-ghost btn-sm mb-4"><ArrowLeftIcon className="size-4" />Back to discovery</Link>
+      <div className="mx-auto w-full max-w-3xl min-w-0">
+        <Link to="/friends" className="btn btn-ghost btn-sm mb-4"><ArrowLeftIcon className="size-4" />Back to friends</Link>
 
-        <div className="surface-card">
-          <div className="card-body">
-            <div className="flex flex-col sm:flex-row gap-5">
-              <ProfileAvatar src={user.profilePic} name={user.fullName} className="w-28 h-28" />
+        <div className="surface-card overflow-hidden">
+          <div className="card-body min-w-0 p-4 sm:p-6">
+            <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
+              <ProfileAvatar src={user.profilePic} name={user.fullName} className="h-28 w-28 shrink-0" />
               <div className="min-w-0 flex-1">
-                <h1 className="text-3xl font-bold break-words">{user.fullName}</h1>
-                <p className="flex items-center gap-1 opacity-70 mt-1"><MapPinIcon className="size-4" />{user.location || "Location not shared"}</p>
-                <p className="mt-4 whitespace-pre-wrap opacity-80">{user.bio || "No bio added yet."}</p>
+                <h1 className="break-words text-2xl font-bold sm:text-3xl">{user.fullName}</h1>
+                <p className="mt-1 flex items-center justify-center gap-1 break-words opacity-70 sm:justify-start">
+                  <MapPinIcon className="size-4 shrink-0" />{user.location || "Location not shared"}
+                </p>
+                <p className="mt-4 break-words whitespace-pre-wrap opacity-80">{user.bio || "No bio added yet."}</p>
               </div>
             </div>
 
             <div className="divider" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-box bg-base-100 p-4"><p className="text-sm opacity-60">Native language</p><p className="font-medium mt-1">{user.nativeLanguage || "Not shared"}</p></div>
-              <div className="rounded-box bg-base-100 p-4"><p className="text-sm opacity-60">Learning language</p><p className="font-medium mt-1">{user.learningLanguage || "Not shared"}</p></div>
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+              <div className="min-w-0 rounded-box bg-base-100 p-4"><p className="text-sm opacity-60">Native language</p><p className="mt-1 break-words font-medium">{user.nativeLanguage || "Not shared"}</p></div>
+              <div className="min-w-0 rounded-box bg-base-100 p-4"><p className="text-sm opacity-60">Learning language</p><p className="mt-1 break-words font-medium">{user.learningLanguage || "Not shared"}</p></div>
             </div>
 
-            <div className="card-actions mt-2">
+            <div className="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
               {action === "request_sent" ? (
-                <button className="btn btn-disabled" disabled><CheckCircleIcon className="size-4" />Request Sent</button>
+                <button className="btn btn-disabled sm:w-auto" disabled><CheckCircleIcon className="size-4" />Request Sent</button>
               ) : action === "review_request" ? (
-                <Link className="btn btn-secondary" to="/notifications">Review Incoming Request</Link>
+                <Link className="btn btn-secondary sm:w-auto" to="/notifications">Review Incoming Request</Link>
               ) : action === "friends" ? (
-                <Link className="btn btn-primary" to={`/chat/${user._id}`}><MessageCircleIcon className="size-4" />Message</Link>
+                <>
+                  <Link className="btn btn-primary sm:w-auto" to={`/chat/${user._id}`}><MessageCircleIcon className="size-4" />Message</Link>
+                  <button className="btn btn-outline btn-error sm:w-auto" onClick={() => setShowRemoveConfirm(true)}><UserMinusIcon className="size-4" />Remove Friend</button>
+                </>
               ) : (
-                <button className="btn btn-primary" disabled={sendMutation.isPending} onClick={() => sendMutation.mutate()}>
+                <button className="btn btn-primary sm:w-auto" disabled={sendMutation.isPending} onClick={() => sendMutation.mutate()}>
                   {sendMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : <UserPlusIcon className="size-4" />}
                   Add Friend
                 </button>
@@ -85,6 +110,23 @@ const PublicProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {showRemoveConfirm && (
+        <div className="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="remove-friend-title">
+          <div className="modal-box max-w-md">
+            <h2 id="remove-friend-title" className="font-bold text-lg">Remove friend?</h2>
+            <p className="py-4 break-words">Remove {user.fullName} from your friends?</p>
+            <div className="modal-action">
+              <button className="btn" disabled={removeMutation.isPending} onClick={() => setShowRemoveConfirm(false)}>Cancel</button>
+              <button className="btn btn-error" disabled={removeMutation.isPending} onClick={() => removeMutation.mutate()}>
+                {removeMutation.isPending && <span className="loading loading-spinner loading-xs" />}
+                Remove Friend
+              </button>
+            </div>
+          </div>
+          <button className="modal-backdrop" aria-label="Close remove friend dialog" onClick={() => !removeMutation.isPending && setShowRemoveConfirm(false)}>close</button>
+        </div>
+      )}
     </div>
   );
 };

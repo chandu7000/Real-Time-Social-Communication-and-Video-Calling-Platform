@@ -1,38 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import FriendCard from "../components/FriendCard";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRightIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 import NoFriendsFound from "../components/NoFriendsFound";
-import { getUserFriends, removeFriend } from "../lib/api";
+import ProfileAvatar from "../components/ProfileAvatar";
+import { getUserFriends } from "../lib/api";
 import { getFriendsFromResponse } from "../lib/friends";
 import { getApiErrorMessage } from "../lib/profile";
 
 const FriendsPage = () => {
-  const queryClient = useQueryClient();
-  const [friendToRemove, setFriendToRemove] = useState(null);
-
   const friendsQuery = useQuery({ queryKey: ["friends"], queryFn: getUserFriends, retry: false });
   const friends = getFriendsFromResponse(friendsQuery.data);
 
-  const removeMutation = useMutation({
-    mutationFn: removeFriend,
-    onSuccess: () => {
-      toast.success("Friend removed");
-      setFriendToRemove(null);
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({ queryKey: ["userSearch"] });
-      queryClient.invalidateQueries({ queryKey: ["publicProfile"] });
-    },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Unable to remove friend")),
-  });
-
   return (
     <div className="page-shell">
-      <div className="container mx-auto max-w-6xl">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Friends</h1>
-          <p className="opacity-70 mt-1">People you have connected with on Zenvio.</p>
+      <div className="mx-auto w-full max-w-3xl min-w-0">
+        <div className="mb-5">
+          <h1 className="page-heading">Friends</h1>
+          <p className="page-subtitle">People you have connected with on Zenvio.</p>
         </div>
 
         {friendsQuery.isLoading ? (
@@ -45,35 +29,24 @@ const FriendsPage = () => {
         ) : friends.length === 0 ? (
           <NoFriendsFound />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="surface-card overflow-hidden divide-y divide-base-300">
             {friends.map((friend) => (
-              <FriendCard
+              <Link
                 key={friend._id}
-                friend={friend}
-                onRemove={setFriendToRemove}
-                removing={removeMutation.isPending && friendToRemove?._id === friend._id}
-              />
+                to={`/users/${friend._id}`}
+                className="flex min-w-0 items-center gap-3 px-3 py-3 transition-colors hover:bg-base-200/70 focus-visible:bg-base-200 sm:px-4 sm:py-4"
+                aria-label={`View ${friend.fullName}'s profile`}
+              >
+                <ProfileAvatar src={friend.profilePic} name={friend.fullName} className="h-12 w-12 shrink-0 sm:h-14 sm:w-14" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold sm:text-lg">{friend.fullName}</p>
+                </div>
+                <ChevronRightIcon className="size-5 shrink-0 opacity-45" aria-hidden="true" />
+              </Link>
             ))}
           </div>
         )}
       </div>
-
-      {friendToRemove && (
-        <div className="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="remove-friend-title">
-          <div className="modal-box">
-            <h2 id="remove-friend-title" className="font-bold text-lg">Remove friend?</h2>
-            <p className="py-4">Remove {friendToRemove.fullName} from your friends?</p>
-            <div className="modal-action">
-              <button className="btn" disabled={removeMutation.isPending} onClick={() => setFriendToRemove(null)}>Cancel</button>
-              <button className="btn btn-error" disabled={removeMutation.isPending} onClick={() => removeMutation.mutate(friendToRemove._id)}>
-                {removeMutation.isPending && <span className="loading loading-spinner loading-xs" />}
-                Remove Friend
-              </button>
-            </div>
-          </div>
-          <button className="modal-backdrop" aria-label="Close remove friend dialog" onClick={() => !removeMutation.isPending && setFriendToRemove(null)}>close</button>
-        </div>
-      )}
     </div>
   );
 };
