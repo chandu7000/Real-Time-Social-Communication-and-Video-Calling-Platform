@@ -238,9 +238,16 @@ const NotificationsPage = () => {
                                 <p className="text-sm opacity-70 line-clamp-1">{request.sender?.bio || "Wants to connect with you."}</p>
                               </div>
                             </div>
-                            <div className="flex gap-2 sm:flex-none">
+                            <div className="flex gap-2 sm:flex-none sm:min-w-48">
                               <button className="btn btn-primary btn-sm flex-1" disabled={mutationPending} onClick={() => acceptMutation.mutate(request._id)}>Accept</button>
-                              <button className="btn btn-outline btn-sm flex-1" disabled={mutationPending} onClick={() => rejectMutation.mutate(request._id)}><UserXIcon className="size-4" />Reject</button>
+                              <button
+                                className="btn btn-outline btn-sm flex-1 gap-2"
+                                disabled={mutationPending}
+                                onClick={() => rejectMutation.mutate(request._id)}
+                              >
+                                <UserXIcon className="size-4 shrink-0" aria-hidden="true" />
+                                <span>Reject</span>
+                              </button>
                             </div>
                           </div>
                         </div>
