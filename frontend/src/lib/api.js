@@ -1,25 +1,35 @@
 import { axiosInstance } from "./axios";
+import { clearAuthSessionToken, hasAuthSessionToken, setAuthSessionToken } from "./authSession";
 
 export const signup = async (signupData) => {
   const response = await axiosInstance.post("/auth/signup", signupData);
+  if (response.data?.token) setAuthSessionToken(response.data.token);
   return response.data;
 };
 
 export const login = async (loginData) => {
   const response = await axiosInstance.post("/auth/login", loginData);
-  return response.data;
-};
-export const logout = async () => {
-  const response = await axiosInstance.post("/auth/logout");
+  if (response.data?.token) setAuthSessionToken(response.data.token);
   return response.data;
 };
 
+export const logout = async () => {
+  try {
+    const response = await axiosInstance.post("/auth/logout");
+    return response.data;
+  } finally {
+    clearAuthSessionToken();
+  }
+};
+
 export const getAuthUser = async () => {
+  if (!hasAuthSessionToken()) return null;
+
   try {
     const res = await axiosInstance.get("/auth/me");
     return res.data;
-  } catch (error) {
-    console.log("Error in getAuthUser:", error);
+  } catch {
+    clearAuthSessionToken();
     return null;
   }
 };

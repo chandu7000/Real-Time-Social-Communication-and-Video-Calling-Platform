@@ -17,6 +17,7 @@ const {
 } = await import("../utils/auth.js");
 const { env } = await import("../config/env.js");
 const { protectRoute } = await import("../middleware/auth.middleware.js");
+const { default: User } = await import("../models/User.js");
 const {
   createAuthRateLimiter,
   resetAuthRateLimitStoreForTests,
@@ -200,4 +201,37 @@ test("onboarding validation reports missing required fields", async () => {
   const result = validateOnboardingInput({ fullName: "User", bio: "", nativeLanguage: "English", learningLanguage: "", location: "India", profilePic: "" });
   assert.equal(result.message, "All fields are required");
   assert.deepEqual(result.missingFields.sort(), ["bio", "learningLanguage"]);
+});
+
+test("authentication middleware prefers a bearer token over a shared cookie", async () => {
+  const bearerToken = jwt.sign(
+    { userId: "507f1f77bcf86cd799439011" },
+    env.jwtSecret,
+    { expiresIn: "5m" }
+  );
+  const req = {
+    headers: { authorization: `Bearer ${bearerToken}` },
+    cookies: { jwt: "not-a-valid-token" },
+  };
+  const res = createResponse();
+  const originalFindById = User.findById;
+
+  User.findById = () => ({
+    select: async () => ({
+      _id: "507f1f77bcf86cd799439011",
+      fullName: "Bearer User",
+    }),
+  });
+
+  try {
+    let nextCalled = false;
+    await protectRoute(req, res, () => {
+      nextCalled = true;
+    });
+
+    assert.equal(nextCalled, true);
+    assert.equal(req.user.fullName, "Bearer User");
+  } finally {
+    User.findById = originalFindById;
+  }
 });

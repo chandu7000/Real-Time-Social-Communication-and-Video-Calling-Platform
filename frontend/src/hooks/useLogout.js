@@ -19,14 +19,14 @@ const useLogout = () => {
 
       return logout();
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.removeQueries({ queryKey: ["streamToken"] });
       queryClient.removeQueries({ queryKey: ["chatAccess"] });
       queryClient.removeQueries({ queryKey: ["notifications"] });
       queryClient.removeQueries({ queryKey: ["notificationUnreadCount"] });
       queryClient.removeQueries({ queryKey: ["friendRequests"] });
       queryClient.removeQueries({ queryKey: ["outgoingFriendReqs"] });
-      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.setQueryData(["authUser"], null);
     },
   });
 

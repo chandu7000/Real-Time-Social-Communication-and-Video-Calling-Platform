@@ -6,7 +6,12 @@ import { AUTH_COOKIE_NAME } from "../utils/auth.js";
 const unauthorized = (res, message) => res.status(401).json({ success: false, message });
 
 export const protectRoute = async (req, res, next) => {
-  const token = req.cookies?.[AUTH_COOKIE_NAME];
+  const authorizationHeader = req.headers?.authorization;
+  const bearerToken =
+    typeof authorizationHeader === "string" && authorizationHeader.startsWith("Bearer ")
+      ? authorizationHeader.slice(7).trim()
+      : "";
+  const token = bearerToken || req.cookies?.[AUTH_COOKIE_NAME];
 
   if (!token) {
     return unauthorized(res, "Authentication required");

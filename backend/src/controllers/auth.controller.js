@@ -61,7 +61,7 @@ export async function signup(req, res) {
 
   const token = createAuthToken(newUser._id);
   res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
-  return res.status(201).json({ success: true, user: toSafeUser(newUser) });
+  return res.status(201).json({ success: true, token, user: toSafeUser(newUser) });
 }
 
 export async function login(req, res) {
@@ -80,7 +80,7 @@ export async function login(req, res) {
 
   const token = createAuthToken(user._id);
   res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
-  return res.status(200).json({ success: true, user: toSafeUser(user) });
+  return res.status(200).json({ success: true, token, user: toSafeUser(user) });
 }
 
 export function logout(_req, res) {
