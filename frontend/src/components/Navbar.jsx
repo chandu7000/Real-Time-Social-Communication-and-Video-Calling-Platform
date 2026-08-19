@@ -8,6 +8,7 @@ import {
   UserCircleIcon,
   UsersIcon,
 } from "lucide-react";
+import { createElement } from "react";
 
 import useAuthUser from "../hooks/useAuthUser";
 import useLogout from "../hooks/useLogout";
@@ -45,10 +46,13 @@ const Navbar = () => {
                 <MenuIcon className="size-5" aria-hidden="true" />
               </button>
               <ul tabIndex={0} className="menu dropdown-content z-[60] mt-3 w-64 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl" aria-label="Mobile navigation">
-                {navigation.map(({ to, label, badge }) => (
+                {navigation.map(({ to, label, badge, icon }) => (
                   <li key={to}>
                     <Link to={to} className={location.pathname === to ? "active" : ""}>
-                      <Icon className="size-4" aria-hidden="true" />
+                      {createElement(icon, {
+                        className: "size-4",
+                        "aria-hidden": true,
+                      })}
                       <span>{label}</span>
                       {badge && <NotificationCountBadge className="ml-auto" />}
                     </Link>

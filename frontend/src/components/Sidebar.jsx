@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { BellIcon, HomeIcon, ShipWheelIcon, UserCircleIcon, UsersIcon } from "lucide-react";
-
+import { createElement } from "react";
 import useAuthUser from "../hooks/useAuthUser";
 import NotificationCountBadge from "./NotificationCountBadge";
 import ProfileAvatar from "./ProfileAvatar";
@@ -31,16 +31,23 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-1 p-4" aria-label="Desktop navigation">
-        {navigation.map(({ to, label, badge }) => {
+        {navigation.map(({ to, label, badge, icon }) => {
           const active = pathname === to;
+
           return (
             <Link
               key={to}
               to={to}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${active ? "bg-primary text-primary-content shadow-sm" : "hover:bg-base-200"}`}
+              className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${active
+                  ? "bg-primary text-primary-content shadow-sm"
+                  : "hover:bg-base-200"
+                }`}
             >
-              <Icon className="size-5 shrink-0" aria-hidden="true" />
+              {createElement(icon, {
+                className: "size-5 shrink-0",
+                "aria-hidden": true,
+              })}
               <span>{label}</span>
               {badge && <NotificationCountBadge className="ml-auto" />}
             </Link>
