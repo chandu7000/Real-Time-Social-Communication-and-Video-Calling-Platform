@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply min-w-0 bg-base-200/45 text-base-content antialiased; }
+  button, a, input, textarea, select { outline-offset: 2px; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer components {
+  .page-shell { @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
+  .page-heading { @apply text-2xl font-bold tracking-tight sm:text-3xl; }
+  .page-subtitle { @apply mt-1 max-w-2xl text-sm opacity-70 sm:text-base; }
+  .surface-card { @apply rounded-2xl border border-base-300 bg-base-100 shadow-sm; }
+  .interactive-card { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-md; }
+  .section-heading { @apply text-lg font-semibold tracking-tight sm:text-xl; }
+}
+
+.str-chat__channel { height: 100%; min-height: 0; }
+.str-chat__container { width: 100%; height: 100% !important; min-height: 0; margin: 0 !important; overflow: hidden; }
+.str-chat__list { padding: 12px; }
+.str-chat__list-notifications { display: none; }
+.str-chat__message-input { border-top: 1px solid hsl(var(--bc) / 0.15); }
+
+@media (max-width: 767px) {
+  .str-chat__thread { position: absolute; inset: 0; z-index: 20; width: 100%; }
+  .str-chat__list { padding-inline: 6px; }
+}
