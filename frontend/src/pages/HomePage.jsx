@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircleIcon, MapPinIcon, SearchIcon, UserPlusIcon, UsersIcon, XIcon } from "lucide-react";
 import toast from "react-hot-toast";
@@ -24,6 +24,17 @@ const HomePage = () => {
   const [searchInput, setSearchInput] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const query = searchInput.trim();
+
+    const timer = setTimeout(() => {
+      setActiveSearch(query);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const { data: friendsData, isLoading: loadingFriends } = useQuery({ queryKey: ["friends"], queryFn: getUserFriends });
   const friends = getFriendsFromResponse(friendsData);
