@@ -1,15 +1,13 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
 
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
 import videoRoutes from "./routes/video.route.js";
 import notificationRoutes from "./routes/notification.route.js";
-import { env, isProduction } from "./config/env.js";
+import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/error.middleware.js";
 import { createCorsOptions, securityHeaders } from "./middleware/security.middleware.js";
 
@@ -33,20 +31,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/video", videoRoutes);
 app.use("/api/notifications", notificationRoutes);
-
-if (isProduction) {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const frontendDistPath = path.resolve(currentDir, "../../frontend/dist");
-
-  app.use(express.static(frontendDistPath));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api/")) {
-      return next();
-    }
-
-    return res.sendFile(path.join(frontendDistPath, "index.html"));
-  });
-}
 
 app.use(notFound);
 app.use(errorHandler);
