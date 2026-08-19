@@ -39,12 +39,16 @@ const OnboardingPage = () => {
   };
 
   const handleRandomAvatar = () => {
-    const idx = Math.floor(Math.random() * 100) + 1;
-    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
+  const seed = `${formState.fullName || "zenvio-user"}-${Date.now()}`;
+  const randomAvatar = `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
 
-    setFormState({ ...formState, profilePic: randomAvatar });
-    toast.success("New profile picture selected");
-  };
+  setFormState((current) => ({
+    ...current,
+    profilePic: randomAvatar,
+  }));
+
+  toast.success("New profile picture selected");
+};
 
   return (
     <div className="min-h-screen bg-base-200/60 flex items-center justify-center p-4 sm:p-6">

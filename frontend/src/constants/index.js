@@ -181,7 +181,7 @@ export const LANGUAGES = [
 ];
 
 export const LANGUAGE_TO_FLAG = {
-  telugu: 'te',
+  telugu: 'in',
   english: "gb",
   spanish: "es",
   french: "fr",
