@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   CameraIcon,
   ImageIcon,
@@ -12,9 +16,24 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-import { getMyProfile, updateMyProfile } from "../lib/api";
-import { getApiErrorMessage, validateProfileForm } from "../lib/profile";
+import {
+  getMyProfile,
+  updateMyProfile,
+  uploadMyProfilePhoto,
+} from "../lib/api";
+import {
+  getApiErrorMessage,
+  validateProfileForm,
+} from "../lib/profile";
 import ProfileAvatar from "../components/ProfileAvatar";
+
+const MAX_PROFILE_PHOTO_SIZE = 5 * 1024 * 1024;
+
+const ALLOWED_PROFILE_PHOTO_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 const emptyForm = {
   fullName: "",
@@ -51,6 +70,7 @@ const buildProfileForm = (user = {}) => {
 
 const ProfilePage = () => {
   const queryClient = useQueryClient();
+  const photoInputRef = useRef(null);
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -75,10 +95,18 @@ const ProfilePage = () => {
     }
 
     if (form.profileImageMode === "photo") {
-      return form.uploadedProfilePic || user?.profilePic || "";
+      return (
+        form.uploadedProfilePic ||
+        user?.profilePic ||
+        ""
+      );
     }
 
-    return form.avatarProfilePic || user?.profilePic || "";
+    return (
+      form.avatarProfilePic ||
+      user?.profilePic ||
+      ""
+    );
   }, [
     editing,
     form.avatarProfilePic,
@@ -94,27 +122,131 @@ const ProfilePage = () => {
       queryClient.setQueryData(["myProfile"], data);
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["users"] }),
-        queryClient.invalidateQueries({ queryKey: ["friends"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["authUser"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["users"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["friends"],
+        }),
       ]);
 
-      toast.success(data.message || "Profile updated successfully");
+      toast.success(
+        data.message ||
+          "Profile updated successfully"
+      );
 
       setEditing(false);
       setErrors({});
     },
 
     onError: (error) => {
-      toast.error(getApiErrorMessage(error, "Unable to update profile"));
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Unable to update profile"
+        )
+      );
     },
   });
 
+  const photoUploadMutation = useMutation({
+    mutationFn: uploadMyProfilePhoto,
+
+    onSuccess: async (data) => {
+      const updatedUser = data?.user;
+
+      if (!updatedUser) {
+        toast.error(
+          "Profile photo uploaded, but the profile could not be refreshed"
+        );
+        return;
+      }
+
+      queryClient.setQueryData(
+        ["myProfile"],
+        data
+      );
+
+      setForm((current) => ({
+        ...current,
+        uploadedProfilePic:
+          updatedUser.uploadedProfilePic || "",
+        avatarProfilePic:
+          updatedUser.avatarProfilePic ||
+          current.avatarProfilePic,
+        profileImageMode: "photo",
+      }));
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["authUser"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["users"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["friends"],
+        }),
+      ]);
+
+      toast.success(
+        data.message ||
+          "Profile photo uploaded successfully"
+      );
+    },
+
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Unable to upload profile photo"
+        )
+      );
+    },
+  });
+
+  const handlePhotoSelection = (event) => {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (
+      !ALLOWED_PROFILE_PHOTO_TYPES.includes(
+        file.type
+      )
+    ) {
+      toast.error(
+        "Choose a JPEG, PNG, or WebP image"
+      );
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_PHOTO_SIZE) {
+      toast.error(
+        "Profile photo must be 5 MB or smaller"
+      );
+      return;
+    }
+
+    photoUploadMutation.mutate(file);
+  };
+
   const handleGenerateAvatar = () => {
-    const seed = `${form.fullName || "zenvio-user"}-${Date.now()}`;
+    const seed = `${
+      form.fullName || "zenvio-user"
+    }-${Date.now()}`;
 
     const avatarProfilePic =
-      `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
+      `https://api.dicebear.com/10.x/adventurer/svg?seed=${encodeURIComponent(
+        seed
+      )}`;
 
     setForm((current) => ({
       ...current,
@@ -127,7 +259,9 @@ const ProfilePage = () => {
 
   const handleUsePhoto = () => {
     if (!form.uploadedProfilePic) {
-      toast.error("Upload a profile photo first");
+      toast.error(
+        "Upload a profile photo first"
+      );
       return;
     }
 
@@ -139,7 +273,9 @@ const ProfilePage = () => {
 
   const handleUseAvatar = () => {
     if (!form.avatarProfilePic) {
-      toast.error("Generate an avatar first");
+      toast.error(
+        "Generate an avatar first"
+      );
       return;
     }
 
@@ -167,7 +303,10 @@ const ProfilePage = () => {
       profilePic: activePreview,
     };
 
-    const result = validateProfileForm(standardProfileValues);
+    const result =
+      validateProfileForm(
+        standardProfileValues
+      );
 
     setErrors(result.errors);
 
@@ -179,13 +318,22 @@ const ProfilePage = () => {
       fullName: result.values.fullName,
       bio: result.values.bio,
       location: result.values.location,
-      nativeLanguage: result.values.nativeLanguage,
-      learningLanguage: result.values.learningLanguage,
-      uploadedProfilePic: form.uploadedProfilePic,
-      avatarProfilePic: form.avatarProfilePic,
-      profileImageMode: form.profileImageMode,
+      nativeLanguage:
+        result.values.nativeLanguage,
+      learningLanguage:
+        result.values.learningLanguage,
+      uploadedProfilePic:
+        form.uploadedProfilePic,
+      avatarProfilePic:
+        form.avatarProfilePic,
+      profileImageMode:
+        form.profileImageMode,
     });
   };
+
+  const isBusy =
+    updateMutation.isPending ||
+    photoUploadMutation.isPending;
 
   if (profileQuery.isLoading) {
     return (
@@ -209,7 +357,9 @@ const ProfilePage = () => {
 
         <button
           className="btn btn-primary mt-4"
-          onClick={() => profileQuery.refetch()}
+          onClick={() =>
+            profileQuery.refetch()
+          }
         >
           Retry
         </button>
@@ -221,7 +371,6 @@ const ProfilePage = () => {
     <div className="page-shell">
       <div className="max-w-3xl mx-auto card bg-base-200 shadow-sm">
         <div className="card-body gap-6">
-
           {!editing && (
             <div className="flex flex-col sm:flex-row sm:items-start gap-5">
               <ProfileAvatar
@@ -243,13 +392,16 @@ const ProfilePage = () => {
                         aria-hidden="true"
                       />
 
-                      {user.location || "Location not added"}
+                      {user.location ||
+                        "Location not added"}
                     </p>
                   </div>
 
                   <button
                     className="btn btn-primary btn-sm"
-                    onClick={() => setEditing(true)}
+                    onClick={() =>
+                      setEditing(true)
+                    }
                   >
                     <PencilIcon
                       className="size-4"
@@ -260,7 +412,8 @@ const ProfilePage = () => {
                 </div>
 
                 <p className="mt-4 whitespace-pre-wrap opacity-80">
-                  {user.bio || "No bio added yet."}
+                  {user.bio ||
+                    "No bio added yet."}
                 </p>
               </div>
             </div>
@@ -272,6 +425,16 @@ const ProfilePage = () => {
               className="space-y-6"
               noValidate
             >
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={
+                  handlePhotoSelection
+                }
+              />
+
               <section className="rounded-2xl border border-base-300 bg-base-100 p-5 sm:p-6">
                 <div className="mb-5">
                   <h2 className="text-lg font-bold">
@@ -279,8 +442,10 @@ const ProfilePage = () => {
                   </h2>
 
                   <p className="mt-1 text-sm opacity-65">
-                    Keep both your photo and avatar saved, then choose
-                    which one people see across Zenvio.
+                    Keep both your photo and
+                    avatar saved, then choose
+                    which one people see across
+                    Zenvio.
                   </p>
                 </div>
 
@@ -288,12 +453,16 @@ const ProfilePage = () => {
                   <div className="relative">
                     <ProfileAvatar
                       src={activePreview}
-                      name={form.fullName || user.fullName}
+                      name={
+                        form.fullName ||
+                        user.fullName
+                      }
                       className="h-36 w-36 ring-4 ring-base-200 shadow-md"
                     />
 
                     <div className="absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-content shadow">
-                      {form.profileImageMode === "photo" ? (
+                      {form.profileImageMode ===
+                      "photo" ? (
                         <CameraIcon
                           className="size-5"
                           aria-hidden="true"
@@ -308,14 +477,16 @@ const ProfilePage = () => {
                   </div>
 
                   <p className="mt-4 text-sm font-semibold">
-                    {form.profileImageMode === "photo"
+                    {form.profileImageMode ===
+                    "photo"
                       ? "Showing your photo"
                       : "Showing your avatar"}
                   </p>
 
                   <p className="mt-1 text-center text-xs opacity-60">
-                    Switching display mode does not delete your saved
-                    photo or avatar.
+                    Switching display mode does
+                    not delete your saved photo
+                    or avatar.
                   </p>
                 </div>
 
@@ -323,25 +494,40 @@ const ProfilePage = () => {
                   <button
                     type="button"
                     className="btn btn-outline gap-2"
-                    disabled
-                    title="Photo upload will be enabled after secure upload storage is connected"
+                    disabled={isBusy}
+                    onClick={() =>
+                      photoInputRef.current?.click()
+                    }
                   >
-                    <ImageIcon
-                      className="size-4"
-                      aria-hidden="true"
-                    />
-                    Upload / Change Photo
+                    {photoUploadMutation.isPending ? (
+                      <span className="loading loading-spinner loading-sm" />
+                    ) : (
+                      <ImageIcon
+                        className="size-4"
+                        aria-hidden="true"
+                      />
+                    )}
+
+                    {photoUploadMutation.isPending
+                      ? "Uploading..."
+                      : form.uploadedProfilePic
+                        ? "Change Photo"
+                        : "Upload Photo"}
                   </button>
 
                   <button
                     type="button"
                     className="btn btn-outline gap-2"
-                    onClick={handleGenerateAvatar}
+                    onClick={
+                      handleGenerateAvatar
+                    }
+                    disabled={isBusy}
                   >
                     <ShuffleIcon
                       className="size-4"
                       aria-hidden="true"
                     />
+
                     Generate Avatar
                   </button>
                 </div>
@@ -354,10 +540,14 @@ const ProfilePage = () => {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      disabled={!form.uploadedProfilePic}
+                      disabled={
+                        !form.uploadedProfilePic ||
+                        isBusy
+                      }
                       onClick={handleUsePhoto}
                       className={`rounded-xl border p-4 text-left transition ${
-                        form.profileImageMode === "photo"
+                        form.profileImageMode ===
+                        "photo"
                           ? "border-primary bg-primary/10"
                           : "border-base-300 bg-base-200 hover:border-primary/40"
                       } ${
@@ -369,7 +559,8 @@ const ProfilePage = () => {
                       <div className="flex items-center gap-3">
                         <div
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                            form.profileImageMode === "photo"
+                            form.profileImageMode ===
+                            "photo"
                               ? "bg-primary text-primary-content"
                               : "bg-base-300"
                           }`}
@@ -396,10 +587,14 @@ const ProfilePage = () => {
 
                     <button
                       type="button"
-                      disabled={!form.avatarProfilePic}
+                      disabled={
+                        !form.avatarProfilePic ||
+                        isBusy
+                      }
                       onClick={handleUseAvatar}
                       className={`rounded-xl border p-4 text-left transition ${
-                        form.profileImageMode === "avatar"
+                        form.profileImageMode ===
+                        "avatar"
                           ? "border-primary bg-primary/10"
                           : "border-base-300 bg-base-200 hover:border-primary/40"
                       } ${
@@ -411,7 +606,8 @@ const ProfilePage = () => {
                       <div className="flex items-center gap-3">
                         <div
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                            form.profileImageMode === "avatar"
+                            form.profileImageMode ===
+                            "avatar"
                               ? "bg-primary text-primary-content"
                               : "bg-base-300"
                           }`}
@@ -447,16 +643,21 @@ const ProfilePage = () => {
 
                   <input
                     className={`input input-bordered w-full ${
-                      errors.fullName ? "input-error" : ""
+                      errors.fullName
+                        ? "input-error"
+                        : ""
                     }`}
                     value={form.fullName}
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        fullName: event.target.value,
+                        fullName:
+                          event.target.value,
                       }))
                     }
-                    aria-invalid={Boolean(errors.fullName)}
+                    aria-invalid={Boolean(
+                      errors.fullName
+                    )}
                   />
 
                   {errors.fullName && (
@@ -473,16 +674,21 @@ const ProfilePage = () => {
 
                   <input
                     className={`input input-bordered w-full ${
-                      errors.location ? "input-error" : ""
+                      errors.location
+                        ? "input-error"
+                        : ""
                     }`}
                     value={form.location}
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        location: event.target.value,
+                        location:
+                          event.target.value,
                       }))
                     }
-                    aria-invalid={Boolean(errors.location)}
+                    aria-invalid={Boolean(
+                      errors.location
+                    )}
                   />
 
                   {errors.location && (
@@ -499,21 +705,30 @@ const ProfilePage = () => {
 
                   <input
                     className={`input input-bordered w-full ${
-                      errors.nativeLanguage ? "input-error" : ""
+                      errors.nativeLanguage
+                        ? "input-error"
+                        : ""
                     }`}
-                    value={form.nativeLanguage}
+                    value={
+                      form.nativeLanguage
+                    }
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        nativeLanguage: event.target.value,
+                        nativeLanguage:
+                          event.target.value,
                       }))
                     }
-                    aria-invalid={Boolean(errors.nativeLanguage)}
+                    aria-invalid={Boolean(
+                      errors.nativeLanguage
+                    )}
                   />
 
                   {errors.nativeLanguage && (
                     <span className="text-error text-sm mt-1">
-                      {errors.nativeLanguage}
+                      {
+                        errors.nativeLanguage
+                      }
                     </span>
                   )}
                 </label>
@@ -525,21 +740,30 @@ const ProfilePage = () => {
 
                   <input
                     className={`input input-bordered w-full ${
-                      errors.learningLanguage ? "input-error" : ""
+                      errors.learningLanguage
+                        ? "input-error"
+                        : ""
                     }`}
-                    value={form.learningLanguage}
+                    value={
+                      form.learningLanguage
+                    }
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        learningLanguage: event.target.value,
+                        learningLanguage:
+                          event.target.value,
                       }))
                     }
-                    aria-invalid={Boolean(errors.learningLanguage)}
+                    aria-invalid={Boolean(
+                      errors.learningLanguage
+                    )}
                   />
 
                   {errors.learningLanguage && (
                     <span className="text-error text-sm mt-1">
-                      {errors.learningLanguage}
+                      {
+                        errors.learningLanguage
+                      }
                     </span>
                   )}
                 </label>
@@ -552,7 +776,9 @@ const ProfilePage = () => {
 
                 <textarea
                   className={`textarea textarea-bordered min-h-28 ${
-                    errors.bio ? "textarea-error" : ""
+                    errors.bio
+                      ? "textarea-error"
+                      : ""
                   }`}
                   value={form.bio}
                   onChange={(event) =>
@@ -569,7 +795,9 @@ const ProfilePage = () => {
                       "Tell people a little about yourself"}
                   </span>
 
-                  <span>{form.bio.length}/300</span>
+                  <span>
+                    {form.bio.length}/300
+                  </span>
                 </div>
               </label>
 
@@ -578,18 +806,19 @@ const ProfilePage = () => {
                   type="button"
                   className="btn btn-ghost"
                   onClick={handleCancel}
-                  disabled={updateMutation.isPending}
+                  disabled={isBusy}
                 >
                   <XIcon
                     className="size-4"
                     aria-hidden="true"
                   />
+
                   Cancel
                 </button>
 
                 <button
-                  className="btn btn-primary min-w-32"
-                  disabled={updateMutation.isPending}
+                  className="btn btn-primary min-w-36"
+                  disabled={isBusy}
                 >
                   {updateMutation.isPending ? (
                     <span className="loading loading-spinner loading-sm" />
@@ -612,7 +841,8 @@ const ProfilePage = () => {
                 </p>
 
                 <p className="font-medium mt-1">
-                  {user.nativeLanguage || "Not added"}
+                  {user.nativeLanguage ||
+                    "Not added"}
                 </p>
               </div>
 
@@ -622,7 +852,8 @@ const ProfilePage = () => {
                 </p>
 
                 <p className="font-medium mt-1">
-                  {user.learningLanguage || "Not added"}
+                  {user.learningLanguage ||
+                    "Not added"}
                 </p>
               </div>
             </div>

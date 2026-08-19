@@ -131,3 +131,16 @@ export async function markAllNotificationsRead() {
   const response = await axiosInstance.put("/notifications/read-all");
   return response.data;
 }
+
+export async function uploadMyProfilePhoto(file) {
+  const formData = new FormData();
+
+  formData.append("profilePhoto", file);
+
+  const response = await axiosInstance.post(
+    "/users/me/profile-photo",
+    formData
+  );
+
+  return response.data;
+}

@@ -14,9 +14,11 @@ import {
   searchUsers,
   sendFriendRequest,
   updateMyProfile,
+  uploadMyProfilePhoto,
 } from "../controllers/user.controller.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { createRequestRateLimiter } from "../middleware/request-rate-limit.middleware.js";
+import { uploadProfilePhoto } from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 const friendRequestLimiter = createRequestRateLimiter({ windowMs: 60_000, maxRequests: 20, message: "Too many friend requests. Please try again shortly." });
@@ -35,5 +37,9 @@ router.delete("/friend-request/:id", asyncHandler(cancelFriendRequest));
 router.delete("/friends/:id", asyncHandler(removeFriend));
 router.get("/:id", asyncHandler(getPublicProfile));
 router.get("/", asyncHandler(getRecommendedUsers));
-
+router.post(
+  "/me/profile-photo",
+  uploadProfilePhoto,
+  asyncHandler(uploadMyProfilePhoto)
+);
 export default router;

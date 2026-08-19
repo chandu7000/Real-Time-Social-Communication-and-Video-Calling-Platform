@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import FriendRequest from "../models/FriendRequest.js";
 import Notification from "../models/Notification.js";
 import { upsertStreamUser } from "../lib/stream.js";
+import { uploadProfileImage } from "../lib/cloudinary.js";
 import { logger } from "../utils/logger.js";
 import {
   PROFILE_PUBLIC_FIELDS,
@@ -418,4 +419,56 @@ export async function getOutgoingFriendReqs(req, res) {
     .populate("recipient", FRIEND_PUBLIC_FIELDS);
 
   return success(res, 200, { outgoingRequests });
+}
+
+export async function uploadMyProfilePhoto(req, res) {
+  if (!req.file?.buffer) {
+    return failure(res, 400, "Profile photo is required");
+  }
+
+  const uploadResult = await uploadProfileImage(
+    req.file.buffer,
+    req.user.id
+  );
+
+  if (!uploadResult?.secure_url) {
+    return failure(res, 500, "Unable to upload profile photo");
+  }
+
+  const uploadedProfilePic = uploadResult.secure_url;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user.id,
+    {
+      uploadedProfilePic,
+      profilePic: uploadedProfilePic,
+      profileImageMode: "photo",
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select(PROFILE_PUBLIC_FIELDS);
+
+  if (!updatedUser) {
+    return failure(res, 404, "User not found");
+  }
+
+  try {
+    await upsertStreamUser({
+      id: updatedUser._id.toString(),
+      name: updatedUser.fullName,
+      image: updatedUser.profilePic || "",
+    });
+  } catch (error) {
+    logger.warn(
+      "Unable to update Stream user after profile photo upload",
+      error
+    );
+  }
+
+  return success(res, 200, {
+    message: "Profile photo uploaded successfully",
+    user: updatedUser,
+  });
 }
