@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logout } from "../lib/api";
 import { disconnectStreamUser } from "../lib/streamChat";
+import { useChatUnreadStore } from "../store/useChatUnreadStore";
 
 const useLogout = () => {
   const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ const useLogout = () => {
       queryClient.removeQueries({ queryKey: ["notificationUnreadCount"] });
       queryClient.removeQueries({ queryKey: ["friendRequests"] });
       queryClient.removeQueries({ queryKey: ["outgoingFriendReqs"] });
+      useChatUnreadStore.getState().reset();
       queryClient.setQueryData(["authUser"], null);
     },
   });

@@ -1,3 +1,4 @@
+import MobileBottomNav from "./MobileBottomNav";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 
@@ -7,9 +8,13 @@ const Layout = ({ children, showSidebar = false }) => (
       {showSidebar && <Sidebar />}
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar />
-        <main id="main-content" className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <main
+          id="main-content"
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto pb-16 lg:pb-0"
+        >
           {children}
         </main>
+        <MobileBottomNav />
       </div>
     </div>
   </div>

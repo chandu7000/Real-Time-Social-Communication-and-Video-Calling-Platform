@@ -144,6 +144,26 @@ const ChatPage = () => {
     setInitializationError(null);
   }, [targetUserId]);
 
+  useEffect(() => {
+    if (!channel || !authUser?._id) return undefined;
+
+    const subscription = channel.on("message.new", async (event) => {
+      if (
+        event.user?.id &&
+        String(event.user.id) !== String(authUser._id) &&
+        document.visibilityState === "visible"
+      ) {
+        try {
+          await channel.markRead();
+        } catch {
+          // Stream will retry read-state synchronization through its normal lifecycle.
+        }
+      }
+    });
+
+    return () => subscription?.unsubscribe?.();
+  }, [authUser?._id, channel]);
+
   const handleRetry = async () => {
     setInitializationError(null);
 
@@ -226,11 +246,11 @@ const ChatPage = () => {
 
             <div className="card-actions mt-3 flex-wrap justify-center">
               <Link
-                to="/friends"
+                to="/chats"
                 className="btn btn-outline btn-sm"
               >
                 <ArrowLeftIcon className="size-4" />
-                Back to Friends
+                Back to Chats
               </Link>
 
               {recoverable && (
@@ -261,7 +281,7 @@ const ChatPage = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] min-h-[560px] p-2 sm:p-4">
+    <div className="h-[calc(100dvh-8rem)] min-h-[420px] p-2 sm:p-4 lg:h-[calc(100vh-4rem)] lg:min-h-[560px]">
       <div className="h-full max-w-[1500px] mx-auto flex overflow-hidden rounded-xl border border-base-300 bg-base-100 shadow-sm">
 
         <ChatFriendList
@@ -276,9 +296,9 @@ const ChatPage = () => {
           <header className="flex items-center justify-between gap-3 border-b border-base-300 px-3 py-2 sm:px-4">
             <div className="flex items-center gap-3 min-w-0">
               <Link
-                to="/friends"
+                to="/chats"
                 className="btn btn-ghost btn-sm btn-circle lg:hidden"
-                aria-label="Back to friends"
+                aria-label="Back to chats"
               >
                 <ArrowLeftIcon className="size-5" />
               </Link>
