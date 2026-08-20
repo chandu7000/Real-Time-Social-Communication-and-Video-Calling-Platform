@@ -5,28 +5,77 @@
 @layer base {
   html { scroll-behavior: smooth; width: 100%; max-width: 100%; overflow-x: hidden; }
   body, #root { width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; }
-  body { @apply min-w-0 bg-base-200/45 text-base-content antialiased; }
+  body {
+    @apply min-w-0 text-base-content antialiased;
+    background:
+      radial-gradient(circle at 18% 0%, hsl(var(--p) / .10), transparent 28rem),
+      radial-gradient(circle at 100% 18%, hsl(var(--s) / .07), transparent 30rem),
+      hsl(var(--b2));
+  }
   img, video, canvas, svg { max-width: 100%; }
   button, a, input, textarea, select { outline-offset: 2px; }
   button, a { -webkit-tap-highlight-color: transparent; }
+  ::selection { background: hsl(var(--p) / .28); }
 }
 
 @layer components {
-  .page-shell { @apply mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8; }
-  .page-heading { @apply text-2xl font-bold tracking-tight sm:text-3xl; }
-  .page-subtitle { @apply mt-1 max-w-2xl text-sm opacity-70 sm:text-base; }
-  .surface-card { @apply rounded-2xl border border-base-300 bg-base-100 shadow-sm; }
-  .interactive-card { @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-md; }
-  .section-heading { @apply text-lg font-semibold tracking-tight sm:text-xl; }
+  .page-shell { @apply mx-auto w-full min-w-0 max-w-[1380px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10; }
+  .page-heading { @apply text-3xl font-black tracking-[-0.035em] sm:text-4xl; }
+  .page-subtitle { @apply mt-2 max-w-2xl text-sm leading-6 opacity-60 sm:text-base; }
+  .section-heading { @apply text-xl font-extrabold tracking-[-0.025em] sm:text-2xl; }
+
+  .surface-card {
+    @apply rounded-[1.6rem] border bg-base-100/80 shadow-sm backdrop-blur;
+    border-color: hsl(var(--bc) / .09);
+    box-shadow: 0 16px 42px hsl(var(--bc) / .045);
+  }
+  .interactive-card { @apply transition duration-200 hover:-translate-y-1; }
+  .interactive-card:hover { box-shadow: 0 22px 54px hsl(var(--bc) / .10); border-color: hsl(var(--p) / .24); }
+
+  .btn { @apply rounded-xl border-0 font-bold normal-case shadow-none transition duration-200; min-height: 2.75rem; }
+  .btn:not(.btn-circle):active { transform: scale(.98); }
+  .btn-primary { box-shadow: 0 10px 25px hsl(var(--p) / .18); }
+  .btn-outline { border: 1px solid hsl(var(--bc) / .16) !important; background: hsl(var(--b1) / .55) !important; }
+  .btn-outline:hover { border-color: hsl(var(--p) / .45) !important; background: hsl(var(--p) / .08) !important; color: hsl(var(--p)) !important; }
+  .btn-ghost:hover { background: hsl(var(--bc) / .07) !important; }
+
+  .input, .textarea, .select {
+    @apply rounded-xl bg-base-100/75 transition duration-200;
+    border-color: hsl(var(--bc) / .13) !important;
+  }
+  .input:focus, .input:focus-within, .textarea:focus, .select:focus {
+    border-color: hsl(var(--p) / .65) !important;
+    box-shadow: 0 0 0 3px hsl(var(--p) / .10);
+    outline: none !important;
+  }
+  .badge { @apply rounded-lg border-0 px-2.5 font-semibold; }
+  .alert { @apply rounded-2xl border-0; }
+  .card { @apply rounded-[1.6rem]; }
 }
 
+/* Give generic DaisyUI cards a Zenvio surface without touching their behavior. */
+.card.bg-base-100, .card.bg-base-200 {
+  border: 1px solid hsl(var(--bc) / .08);
+  box-shadow: 0 14px 38px hsl(var(--bc) / .045);
+}
+
+/* Stream Chat visual remodel only. */
+.str-chat { --str-chat__primary-color: hsl(var(--p)); --str-chat__active-primary-color: hsl(var(--p)); }
 .str-chat__channel { height: 100%; min-height: 0; }
-.str-chat__container { width: 100%; height: 100% !important; min-height: 0; margin: 0 !important; overflow: hidden; }
-.str-chat__list { padding: 12px; }
+.str-chat__container { width: 100%; height: 100% !important; min-height: 0; margin: 0 !important; overflow: hidden; background: hsl(var(--b1)); }
+.str-chat__list { padding: 18px 16px; background: hsl(var(--b1)); }
 .str-chat__list-notifications { display: none; }
-.str-chat__message-input { border-top: 1px solid hsl(var(--bc) / 0.15); }
+.str-chat__message-input { border-top: 1px solid hsl(var(--bc) / .08); background: hsl(var(--b1)); padding: 10px 12px; }
+.str-chat__message-input-inner { border-radius: 18px !important; }
+.str-chat__message-bubble { border-radius: 18px !important; }
+
+/* Subtle entrance keeps the app feeling intentional, not template-like. */
+#main-content > * { animation: zenvio-in .28s ease-out both; }
+@keyframes zenvio-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { #main-content > * { animation: none; } }
 
 @media (max-width: 767px) {
+  .page-shell { @apply px-4 py-5; }
   .str-chat__thread { position: absolute; inset: 0; z-index: 20; width: 100%; }
-  .str-chat__list { padding-inline: 6px; }
+  .str-chat__list { padding-inline: 7px; }
 }

@@ -10,8 +10,15 @@ export function getStreamChatClient() {
   return StreamChat.getInstance(STREAM_API_KEY);
 }
 
-export async function connectStreamUser(client, authUser, token) {
-  if (client.userID && client.userID !== authUser._id) {
+export async function connectStreamUser(
+  client,
+  authUser,
+  token
+) {
+  if (
+    client.userID &&
+    client.userID !== authUser._id
+  ) {
     await client.disconnectUser();
   }
 
@@ -29,10 +36,68 @@ export async function connectStreamUser(client, authUser, token) {
   return client;
 }
 
-export async function disconnectStreamUser() {
-  if (!STREAM_API_KEY) return;
+export function getStreamChannelMemberUser(
+  channel,
+  userId
+) {
+  if (!channel || !userId) {
+    return null;
+  }
 
-  const client = StreamChat.getInstance(STREAM_API_KEY);
+  return (
+    channel.state?.members?.[String(userId)]?.user || null
+  );
+}
+
+export function subscribeToStreamUserPresence(
+  channel,
+  userId,
+  onChange
+) {
+  if (
+    !channel ||
+    !userId ||
+    typeof onChange !== "function"
+  ) {
+    return () => {};
+  }
+
+  const targetUserId = String(userId);
+
+  const currentUser =
+    getStreamChannelMemberUser(
+      channel,
+      targetUserId
+    );
+
+  onChange(currentUser);
+
+  const subscription = channel.on(
+    "user.presence.changed",
+    (event) => {
+      if (
+        String(event.user?.id || "") !== targetUserId
+      ) {
+        return;
+      }
+
+      onChange(event.user || null);
+    }
+  );
+
+  return () => {
+    subscription?.unsubscribe?.();
+  };
+}
+
+export async function disconnectStreamUser() {
+  if (!STREAM_API_KEY) {
+    return;
+  }
+
+  const client =
+    StreamChat.getInstance(STREAM_API_KEY);
+
   if (client.userID) {
     await client.disconnectUser();
   }
