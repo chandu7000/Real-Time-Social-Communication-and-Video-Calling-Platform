@@ -109,7 +109,7 @@ const ChatPage = () => {
 
     enabled: Boolean(
       authUser &&
-        targetUserId
+      targetUserId
     ),
 
     retry: false,
@@ -125,7 +125,7 @@ const ChatPage = () => {
 
     enabled: Boolean(
       authUser &&
-        accessQuery.data?.success
+      accessQuery.data?.success
     ),
 
     staleTime: 5 * 60 * 1000,
@@ -250,9 +250,9 @@ const ChatPage = () => {
         if (
           event.user?.id &&
           String(event.user.id) !==
-            String(authUser._id) &&
+          String(authUser._id) &&
           document.visibilityState ===
-            "visible"
+          "visible"
         ) {
           try {
             await channel.markRead();
@@ -336,16 +336,20 @@ const ChatPage = () => {
       try {
         setSendingCallInvite(true);
 
+        const callExpiresAt = new Date(
+          Date.now() + 5 * 60 * 1000
+        ).toISOString();
+
         await channel.sendMessage({
           text: `${authUser.fullName} started a video call`,
 
           zenvioCallInvite: true,
 
-          callCallerId:
-            String(authUser._id),
+          callCallerId: String(authUser._id),
 
-          callTargetId:
-            String(friend._id),
+          callTargetId: String(friend._id),
+
+          callExpiresAt,
         });
 
         setShowCallConfirm(false);
