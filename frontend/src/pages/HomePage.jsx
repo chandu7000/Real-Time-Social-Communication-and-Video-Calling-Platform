@@ -6,7 +6,6 @@ import {
   MapPinIcon,
   SearchIcon,
   UserPlusIcon,
-  UsersIcon,
   XIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -14,19 +13,16 @@ import toast from "react-hot-toast";
 import {
   getOutgoingFriendReqs,
   getRecommendedUsers,
-  getUserFriends,
   searchUsers,
   sendFriendRequest,
 } from "../lib/api";
 import { getApiErrorMessage } from "../lib/profile";
 import {
-  getFriendsFromResponse,
   getOutgoingRequestsFromResponse,
   relationshipAction,
 } from "../lib/friends";
 import { capitalize } from "../lib/utils";
 import { getLanguageFlag } from "../components/FriendCard";
-import NoFriendsFound from "../components/NoFriendsFound";
 import ProfileAvatar from "../components/ProfileAvatar";
 
 const PAGE_SIZE = 9;
@@ -48,16 +44,6 @@ const HomePage = () => {
 
     return () => clearTimeout(timer);
   }, [searchInput]);
-
-  const {
-    data: friendsData,
-    isLoading: loadingFriends,
-  } = useQuery({
-    queryKey: ["friends"],
-    queryFn: getUserFriends,
-  });
-
-  const friends = getFriendsFromResponse(friendsData);
 
   const recommendationsQuery = useQuery({
     queryKey: ["users", page],
@@ -176,73 +162,15 @@ const HomePage = () => {
 
   return (
     <div className="page-shell">
-      <div className="container mx-auto space-y-10">
-
-        {/* YOUR FRIENDS */}
-        <section>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Your Friends
-            </h2>
-
-            <Link
-              to="/notifications"
-              className="btn btn-outline btn-sm"
-            >
-              <UsersIcon className="mr-2 size-4" />
-              Friend Requests
-            </Link>
-          </div>
-
-          {loadingFriends ? (
-            <div className="flex justify-center py-12">
-              <span className="loading loading-spinner loading-lg" />
-            </div>
-          ) : friends.length === 0 ? (
-            <NoFriendsFound />
-          ) : (
-            <div className="max-w-3xl overflow-hidden rounded-2xl border border-base-300 bg-base-200">
-              {friends.map((friend, index) => (
-                <Link
-                  key={friend._id}
-                  to={`/users/${friend._id}`}
-                  className={`flex items-center gap-4 px-4 sm:px-5 py-4 sm:py-5 transition-colors hover:bg-base-300 ${
-                    index !== friends.length - 1
-                      ? "border-b border-base-300"
-                      : ""
-                  }`}
-                >
-                  <ProfileAvatar
-                    src={friend.profilePic}
-                    name={friend.fullName}
-                    className="h-14 w-14 shrink-0"
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-base sm:text-lg font-semibold">
-                      {friend.fullName}
-                    </h3>
-                  </div>
-
-                  <span
-                    className="shrink-0 text-2xl opacity-40"
-                    aria-hidden="true"
-                  >
-                    ›
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+      <div className="container mx-auto">
 
         {/* DISCOVER PEOPLE */}
         <section>
           <div className="mb-6 space-y-4">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 {heading}
-              </h2>
+              </h1>
 
               <p className="opacity-70 mt-1">
                 Find people, view public profiles, and connect using your
@@ -422,18 +350,14 @@ const HomePage = () => {
                                 : "btn-primary"
                             }`}
                             onClick={() =>
-                              sendRequestMutation(
-                                user._id
-                              )
+                              sendRequestMutation(user._id)
                             }
                             disabled={
-                              action ===
-                                "request_sent" ||
+                              action === "request_sent" ||
                               isPending
                             }
                           >
-                            {action ===
-                            "request_sent" ? (
+                            {action === "request_sent" ? (
                               <>
                                 <CheckCircleIcon className="size-4" />
                                 Request Sent
